@@ -38,8 +38,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'auth_app',
     'rest_framework_simplejwt',
+    'corsheaders',
+    'core',
+    'authentication',
+    'quiz_management',
 ]
 
 MIDDLEWARE = [
