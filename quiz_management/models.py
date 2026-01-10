@@ -1,37 +1,31 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 class Quiz(models.Model):
-    """
-    Model representing a quiz.
-    Contains basic information like title and creation timestamp.
-    """
     title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        verbose_name_plural = "Quizzes"
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='quizzes')
 
     def __str__(self):
         return self.title
 
 class Question(models.Model):
-    """
-    Model representing a single question within a quiz.
-    Linked to a specific Quiz instance.
-    """
-    quiz = models.ForeignKey(Quiz, related_name='questions', on_delete=models.CASCADE)
-    text = models.CharField(max_length=255)
-    
+    QUESTION_TYPES = [
+        ('single', 'Single Choice'),
+        ('multiple', 'Multiple Choice'),
+    ]
+
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='questions')
+    text = models.TextField()
+    question_type = models.CharField(max_length=10, choices=QUESTION_TYPES, default='single')
+    points = models.IntegerField(default=1)
+
     def __str__(self):
         return self.text
 
 class Answer(models.Model):
-    """
-    Model representing an answer option for a question.
-    Linked to a specific Question instance.
-    Stores whether this answer is the correct one.
-    """
-    question = models.ForeignKey(Question, related_name='answers', on_delete=models.CASCADE)
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='answers')
     text = models.CharField(max_length=255)
     is_correct = models.BooleanField(default=False)
 

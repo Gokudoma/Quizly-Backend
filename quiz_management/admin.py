@@ -2,32 +2,17 @@ from django.contrib import admin
 from .models import Quiz, Question, Answer
 
 class AnswerInline(admin.TabularInline):
-    """
-    Allows editing answers directly within the question admin page.
-    """
     model = Answer
-    extra = 4  # Default to showing 4 answer slots
-
-class QuestionInline(admin.TabularInline):
-    """
-    Allows editing questions directly within the quiz admin page.
-    """
-    model = Question
-    extra = 1
+    extra = 4
 
 class QuestionAdmin(admin.ModelAdmin):
-    """
-    Admin configuration for Questions.
-    Includes inline editing for Answers.
-    """
     inlines = [AnswerInline]
+    list_display = ('text', 'quiz', 'question_type', 'points')
+    list_filter = ('quiz',)
 
 class QuizAdmin(admin.ModelAdmin):
-    """
-    Admin configuration for Quizzes.
-    Includes inline editing for Questions.
-    """
-    inlines = [QuestionInline]
+    list_display = ('title', 'author', 'created_at')
+    search_fields = ('title',)
 
 admin.site.register(Quiz, QuizAdmin)
 admin.site.register(Question, QuestionAdmin)
