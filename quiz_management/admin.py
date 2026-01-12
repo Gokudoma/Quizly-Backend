@@ -1,19 +1,22 @@
 from django.contrib import admin
-from .models import Quiz, Question, Answer
+from .models import Quiz, Question
 
-class AnswerInline(admin.TabularInline):
-    model = Answer
-    extra = 4
+# Since we removed the 'Answer' model, we remove AnswerInline
 
-class QuestionAdmin(admin.ModelAdmin):
-    inlines = [AnswerInline]
-    list_display = ('text', 'quiz', 'question_type', 'points')
-    list_filter = ('quiz',)
+class QuestionInline(admin.TabularInline):
+    model = Question
+    extra = 1
 
 class QuizAdmin(admin.ModelAdmin):
-    list_display = ('title', 'author', 'created_at')
+    # 'author' is now 'user' in our new model
+    list_display = ('title', 'user', 'created_at') 
     search_fields = ('title',)
+    inlines = [QuestionInline]
+
+class QuestionAdmin(admin.ModelAdmin):
+    # 'text' is now 'question_text'
+    list_display = ('question_text', 'quiz', 'answer', 'created_at')
+    list_filter = ('quiz',)
 
 admin.site.register(Quiz, QuizAdmin)
 admin.site.register(Question, QuestionAdmin)
-admin.site.register(Answer)

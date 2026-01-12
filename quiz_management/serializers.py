@@ -1,49 +1,21 @@
 from rest_framework import serializers
-from .models import Quiz, Question, Answer
-
-class AnswerSerializer(serializers.ModelSerializer):
-    """
-    Serializer for the Answer model.
-    """
-    class Meta:
-        model = Answer
-        fields = ['id', 'text', 'is_correct']
+from .models import Quiz, Question
 
 class QuestionSerializer(serializers.ModelSerializer):
-    """
-    Serializer for the Question model.
-    Includes nested AnswerSerializer to show options.
-    """
-    answers = AnswerSerializer(many=True, read_only=True)
+    # Mapping internal field names to API specification
+    question_title = serializers.CharField(source='question_text')
+    question_options = serializers.JSONField(source='options')
 
     class Meta:
         model = Question
-        fields = ['id', 'text', 'answers']
+        fields = ['id', 'question_title', 'question_options', 'answer', 'created_at', 'updated_at']
 
-class QuizListSerializer(serializers.ModelSerializer):
-    """
-    Serializer for listing quizzes.
-    Shows basic info like title and question count.
-    """
-    question_count = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Quiz
-        fields = ['id', 'title', 'created_at', 'question_count']
-
-    def get_question_count(self, obj):
-        """
-        Returns the number of questions in the quiz.
-        """
-        return obj.questions.count()
-
-class QuizDetailSerializer(serializers.ModelSerializer):
-    """
-    Serializer for detailed quiz view.
-    Includes nested questions and answers.
-    """
+class QuizResponseSerializer(serializers.ModelSerializer):
     questions = QuestionSerializer(many=True, read_only=True)
 
     class Meta:
         model = Quiz
-        fields = ['id', 'title', 'created_at', 'questions']
+        fields = ['id', 'title', 'description', 'created_at', 'updated_at', 'video_url', 'questions']
+
+class CreateQuizRequestSerializer(serializers.Serializer):
+    url = serializers.URLField()
