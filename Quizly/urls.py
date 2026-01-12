@@ -5,4 +5,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/quiz/', include('quiz_management.urls')),
     path('api/', include('authentication.urls')),
+    path('api/token/', include('authentication.urls')),
 ]
