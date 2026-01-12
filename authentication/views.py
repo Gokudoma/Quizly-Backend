@@ -4,9 +4,10 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status
 from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
 from .serializers import RegistrationSerializer
 
 # --- Existing RegistrationView (Do not delete) ---
@@ -79,3 +80,34 @@ def login_view(request):
             return JsonResponse({"detail": "Invalid JSON"}, status=400)
     
     return JsonResponse({"detail": "Method not allowed"}, status=405)
+
+# --- Logout View ---
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            # Retrieve refresh token from cookie
+            refresh_token = request.COOKIES.get('refresh_token')
+            
+            # If cookie is missing, optionally check body (fallback)
+            if not refresh_token:
+                refresh_token = request.data.get('refresh')
+            
+            if refresh_token:
+                token = RefreshToken(refresh_token)
+                token.blacklist()  # Blacklist the token
+        except (TokenError, Exception):
+            # Ignore errors (e.g. token already invalid), perform logout anyway
+            pass
+
+        response = Response(
+            {"detail": "Log-Out successfully! All Tokens will be deleted. Refresh token is now invalid."},
+            status=status.HTTP_200_OK
+        )
+
+        # Remove cookies
+        response.delete_cookie('access_token')
+        response.delete_cookie('refresh_token')
+        
+        return response
