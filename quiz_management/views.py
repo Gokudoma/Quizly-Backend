@@ -89,14 +89,12 @@ class CreateQuizView(APIView):
         return None
 
     def download_audio(self, url, filename):
-        """Downloads audio track using yt_dlp options from your plan."""
-        # Using the exact options you specified
+        """Downloads audio track using yt_dlp options."""
         ydl_opts = {
             "format": "bestaudio/best",
             "outtmpl": filename,
             "quiet": True,
             "noplaylist": True,
-            # FFmpeg is needed here, providing the location implicitly via PATH is fine now
             "postprocessors": [{
                 "key": "FFmpegExtractAudio",
                 "preferredcodec": "mp3",
@@ -104,8 +102,7 @@ class CreateQuizView(APIView):
             }],
         }
         
-        # Since outtmpl in yt_dlp adds extension automatically during conversion, 
-        # we strip .mp3 from filename for the outtmpl to avoid 'audio.mp3.mp3'
+        # Strip .mp3 from filename for outtmpl to avoid double extension
         base_filename = filename.replace(".mp3", "")
         ydl_opts["outtmpl"] = base_filename
 
@@ -114,12 +111,7 @@ class CreateQuizView(APIView):
 
     def transcribe_audio(self, filename):
         """Transcribes the audio file using Whisper AI (Turbo model)."""
-        # Load the turbo model as requested
-        # Note: 'turbo' requires a decent amount of RAM. 
-        # If it crashes, change "turbo" to "base" or "small".
         model = whisper.load_model("turbo")
-        
-        # Transcribe
         result = model.transcribe(filename)
         return result["text"]
 
@@ -131,7 +123,7 @@ class CreateQuizView(APIView):
         
         client = genai.Client(api_key=api_key)
 
-        # Limit transcript length to avoid token limits (safe buffer)
+        # Limit transcript length to avoid token limits
         short_transcript = transcript_text[:25000]
 
         prompt = f"""
@@ -168,3 +160,28 @@ class CreateQuizView(APIView):
             response_text = response_text[:-3]
             
         return json.loads(response_text)
+
+
+class GetQuizzesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """
+        Retrieves all quizzes for the authenticated user.
+        Endpoint: GET /api/quizzes/
+        """
+        try:
+            # 1. Retrieve all quizzes owned by the current user, ordered by newest first
+            quizzes = Quiz.objects.filter(user=request.user).order_by('-created_at')
+            
+            # 2. Serialize the data
+            serializer = QuizResponseSerializer(quizzes, many=True)
+            
+            # 3. Return the JSON response
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response(
+                {"error": "Internal server error fetching quizzes.", "details": str(e)}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
