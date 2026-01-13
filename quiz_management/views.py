@@ -185,3 +185,47 @@ class GetQuizzesView(APIView):
                 {"error": "Internal server error fetching quizzes.", "details": str(e)}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class QuizDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, pk, user):
+        """
+        Helper method to get the quiz only if it belongs to the user.
+        """
+        try:
+            return Quiz.objects.get(pk=pk, user=user)
+        except Quiz.DoesNotExist:
+            return None
+
+    def get(self, request, pk):
+        """
+        Retrieve a single quiz by ID.
+        Endpoint: GET /api/quizzes/<id>/
+        """
+        quiz = self.get_object(pk, request.user)
+        if not quiz:
+            return Response(
+                {"error": "Quiz not found or not authorized."}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        serializer = QuizResponseSerializer(quiz)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, request, pk):
+        """
+        Delete a single quiz by ID.
+        Endpoint: DELETE /api/quizzes/<id>/
+        """
+        quiz = self.get_object(pk, request.user)
+        if not quiz:
+            return Response(
+                {"error": "Quiz not found or not authorized."}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        quiz.delete()
+        # Return 204 No Content with an empty body as specified
+        return Response(status=status.HTTP_204_NO_CONTENT)
