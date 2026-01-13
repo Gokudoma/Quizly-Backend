@@ -214,6 +214,26 @@ class QuizDetailView(APIView):
         serializer = QuizResponseSerializer(quiz)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    def patch(self, request, pk):
+        """
+        Update a single quiz by ID (Title, Description) partially.
+        Endpoint: PATCH /api/quizzes/<id>/
+        """
+        quiz = self.get_object(pk, request.user)
+        if not quiz:
+            return Response(
+                {"error": "Quiz not found or not authorized."}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # partial=True is key here! It allows updating just the title OR description
+        serializer = QuizResponseSerializer(quiz, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     def delete(self, request, pk):
         """
         Delete a single quiz by ID.
