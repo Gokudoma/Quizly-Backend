@@ -25,7 +25,6 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     # Local apps
-    'core',
     'authentication',
     'quiz_management',
 ]
