@@ -1,6 +1,7 @@
 import json
 import os
 import re
+from pathlib import Path
 
 import whisper
 import yt_dlp
@@ -9,6 +10,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.conf import settings
 
 from .models import Quiz, Question
 from .serializers import CreateQuizRequestSerializer, QuizResponseSerializer
@@ -23,14 +25,7 @@ class CreateQuizView(APIView):
     def post(self, request):
         """
         Processes a POST request to create a quiz.
-
-        Steps:
-        1. Validate the input URL.
-        2. Download audio from the YouTube video.
-        3. Transcribe the audio using Whisper AI.
-        4. Generate quiz questions using Gemini AI.
-        5. Save the quiz and questions to the database.
-        6. Clean up temporary files.
+        Uses absolute paths to ensure compatibility across different operating systems.
         """
         serializer = CreateQuizRequestSerializer(data=request.data)
         if not serializer.is_valid():
@@ -46,16 +41,25 @@ class CreateQuizView(APIView):
             )
 
         clean_url = f"https://www.youtube.com/watch?v={video_id}"
-        temp_audio_file = f"audio_{video_id}.mp3"
+        
+        temp_filename = f"audio_{video_id}"
+        output_path_base = settings.BASE_DIR / temp_filename
+        final_audio_path = str(output_path_base.with_suffix(".mp3"))
 
         try:
-            print(f"Downloading audio for {video_id}...")
-            self.download_audio(clean_url, temp_audio_file)
+            self.download_audio(clean_url, str(output_path_base))
 
-            print("Transcribing audio (this may take a moment)...")
-            transcript_text = self.transcribe_audio(temp_audio_file)
+            if not os.path.exists(final_audio_path):
+                found = False
+                for file in os.listdir(settings.BASE_DIR):
+                    if file.startswith(temp_filename):
+                        final_audio_path = str(settings.BASE_DIR / file)
+                        found = True
+                        break
+                if not found:
+                    raise FileNotFoundError(f"Audio file was not created at {final_audio_path}")
 
-            print("Generating quiz with Gemini...")
+            transcript_text = self.transcribe_audio(final_audio_path)
             generated_data = self.generate_with_gemini(transcript_text, clean_url)
 
             quiz = Quiz.objects.create(
@@ -73,18 +77,19 @@ class CreateQuizView(APIView):
                     answer=q_data['answer']
                 )
 
-            if os.path.exists(temp_audio_file):
-                os.remove(temp_audio_file)
-                print("Temporary audio file removed.")
+            if os.path.exists(final_audio_path):
+                os.remove(final_audio_path)
 
             response_serializer = QuizResponseSerializer(quiz)
             return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
         except Exception as e:
-            if os.path.exists(temp_audio_file):
-                os.remove(temp_audio_file)
+            if os.path.exists(final_audio_path):
+                try:
+                    os.remove(final_audio_path)
+                except OSError:
+                    pass
             
-            print(f"Error generating quiz: {e}")
             return Response(
                 {
                     "error": "Internal server error during quiz generation.",
@@ -103,13 +108,14 @@ class CreateQuizView(APIView):
             return match.group(1)
         return None
 
-    def download_audio(self, url, filename):
+    def download_audio(self, url, absolute_filename_base):
         """
         Downloads audio track from YouTube using yt_dlp.
+        Accepts an absolute path base (without extension) for output.
         """
         ydl_opts = {
             "format": "bestaudio/best",
-            "outtmpl": filename,
+            "outtmpl": f"{absolute_filename_base}.%(ext)s",
             "quiet": True,
             "noplaylist": True,
             "postprocessors": [{
@@ -118,21 +124,19 @@ class CreateQuizView(APIView):
                 "preferredquality": "192",
             }],
         }
-        
-        # yt_dlp appends the extension automatically in some cases;
-        # ensure outtmpl is handled correctly.
-        base_filename = filename.replace(".mp3", "")
-        ydl_opts["outtmpl"] = base_filename
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
 
-    def transcribe_audio(self, filename):
+    def transcribe_audio(self, filepath):
         """
         Transcribes the specified audio file using Whisper AI (Turbo model).
         """
+        if not os.path.exists(filepath):
+            raise FileNotFoundError(f"File not found for transcription: {filepath}")
+            
         model = whisper.load_model("turbo")
-        result = model.transcribe(filename)
+        result = model.transcribe(filepath, fp16=False)
         return result["text"]
 
     def generate_with_gemini(self, transcript_text, video_url):

@@ -214,3 +214,21 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+
+
+# Virtual Environments
+venv/
+env/
+Scripts/
+pyvenv.cfg
+
+# Media & Generated Files
+*.mp3
+*.mp4
+*.wav
+media/
+
+# Temporary Files
+__pycache__/
+*.pyc
