@@ -5,11 +5,10 @@ from pathlib import Path
 
 import whisper
 import yt_dlp
-from google import genai
 from django.conf import settings
+from google import genai
 
 from .utils import extract_youtube_video_id, find_file_by_prefix, clean_ai_json_response
-
 
 class QuizGenerationService:
     """

@@ -1,10 +1,5 @@
-from rest_framework import serializers
 from django.contrib.auth.models import User
-
-# Duplicate imports preserved as per "no code change" request, 
-# though usually these should be cleaned up.
 from rest_framework import serializers
-from django.contrib.auth.models import User
 
 class RegistrationSerializer(serializers.ModelSerializer):
     """
