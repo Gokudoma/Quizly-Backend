@@ -63,6 +63,7 @@ Create a `.env` file in the root directory (same level as `manage.py`) and add t
 DEBUG=True
 SECRET_KEY=your-secure-django-secret-key
 GEMINI_API_KEY=your_google_gemini_api_key_here
+```
 
 
 
@@ -72,11 +73,13 @@ GEMINI_API_KEY=your_google_gemini_api_key_here
 
 ```bash
 python manage.py migrate
+```
 
 2. Start the development server:
 
 ```bash
 python manage.py runserver
+```
 
 
 The API will be available at http://127.0.0.1:8000/.
