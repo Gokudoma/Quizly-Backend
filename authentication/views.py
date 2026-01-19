@@ -10,8 +10,11 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from .serializers import RegistrationSerializer
 
-# --- Existing RegistrationView (Do not delete) ---
 class RegistrationView(APIView):
+    """
+    API View to handle user registration.
+    Allows any user (authenticated or not) to create a new account.
+    """
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -25,9 +28,15 @@ class RegistrationView(APIView):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-# --- New Login View (Matches documentation exactly) ---
 @csrf_exempt
 def login_view(request):
+    """
+    Handles user login and JWT token generation.
+
+    Expects a JSON payload with 'username' and 'password'.
+    Returns a JSON response with user details and sets HTTP-only cookies
+    for 'access_token' and 'refresh_token'.
+    """
     if request.method == "POST":
         try:
             data = json.loads(request.body)
@@ -81,8 +90,13 @@ def login_view(request):
     
     return JsonResponse({"detail": "Method not allowed"}, status=405)
 
-# --- Logout View ---
 class LogoutView(APIView):
+    """
+    API View to handle user logout.
+    
+    Blacklists the refresh token obtained from cookies or the request body
+    and clears the auth cookies.
+    """
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -112,8 +126,10 @@ class LogoutView(APIView):
         
         return response
 
-# --- Refresh View ---
 class CookieTokenRefreshView(APIView):
+    """
+    API View to refresh the access token using the HTTP-only refresh token cookie.
+    """
     permission_classes = [AllowAny]
 
     def post(self, request):

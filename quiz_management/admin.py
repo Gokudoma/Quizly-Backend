@@ -1,20 +1,28 @@
 from django.contrib import admin
 from .models import Quiz, Question
 
-# Since we removed the 'Answer' model, we remove AnswerInline
-
 class QuestionInline(admin.TabularInline):
+    """
+    Allows questions to be edited inline within the Quiz admin page.
+    """
     model = Question
     extra = 1
 
 class QuizAdmin(admin.ModelAdmin):
-    # 'author' is now 'user' in our new model
+    """
+    Admin configuration for the Quiz model.
+    Displays title, associated user, and creation timestamp.
+    """
     list_display = ('title', 'user', 'created_at') 
     search_fields = ('title',)
     inlines = [QuestionInline]
 
 class QuestionAdmin(admin.ModelAdmin):
-    # 'text' is now 'question_text'
+    """
+    Admin configuration for the Question model.
+    Displays the question text, the parent quiz, the correct answer, and creation timestamp.
+    Includes filtering by quiz.
+    """
     list_display = ('question_text', 'quiz', 'answer', 'created_at')
     list_filter = ('quiz',)
 

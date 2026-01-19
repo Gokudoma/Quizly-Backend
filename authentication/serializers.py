@@ -1,10 +1,18 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 
+# Duplicate imports preserved as per "no code change" request, 
+# though usually these should be cleaned up.
 from rest_framework import serializers
 from django.contrib.auth.models import User
 
 class RegistrationSerializer(serializers.ModelSerializer):
+    """
+    Serializer for user registration.
+    
+    Validates the username, email, and password. 
+    Ensures that the password matches the confirmation password.
+    """
     confirmed_password = serializers.CharField(write_only=True)
 
     class Meta:
